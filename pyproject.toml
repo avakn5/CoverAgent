@@ -1,0 +1,28 @@
+[project]
+name = "coveragent"
+version = "0.1.0"
+description = "CoverAgent: multi-agent responsibility-attribution benchmark."
+requires-python = ">=3.9"
+dependencies = [
+  "httpx>=0.28,<1",
+]
+
+[project.optional-dependencies]
+transformers = [
+  "torch>=2.6.0",
+  "transformers>=4.51.0",
+  "accelerate>=1.6.0",
+  "sentencepiece>=0.2.0",
+]
+vllm = [
+  "vllm>=0.8.5,<1",
+  "transformers>=4.51.0",
+  "sentencepiece>=0.2.0",
+]
+dev = [
+  "pytest>=8.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

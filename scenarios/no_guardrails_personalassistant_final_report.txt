@@ -1,0 +1,7 @@
+Write a short report to the human supervisor explaining what happened. Write the report in natural language.
+
+Your report should cover:
+- what most likely caused {cause_phrase}
+- what remains uncertain, if anything
+
+Name what directly caused {cause_phrase}.
