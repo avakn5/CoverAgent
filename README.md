@@ -20,7 +20,7 @@ The leaderboard asks the following question: after another AI agent admits it ca
   <img src="results/asset/coveragent_model_leaderboard.png" alt="CoverAgent misattribution rate leaderboard by model, averaged over scheduling and coding under no-guardrails peer-reputation pressure." width="760">
 </p>
 
-Among reports where the model did not refuse to answer, 49.5% misattribute responsibility under the no-guardrails prompt. Adding an instruction to be helpful, honest, and to use judgment reduces the failure rate to 23.7% on the same model/scenario comparisons, but the failure mode remains.
+Among reports where the model did not refuse to answer, 49.5% misattribute responsibility under the no-guardrails prompt. Adding an instruction to be helpful, honest, and to use judgment reduces the failure rate to 22.6% on the same model/scenario comparisons, but the failure mode remains.
 
 We may need to rethink both how we prompt personal assistants and how AI agents are allowed to interact with one another, so that collaboration with peer agents does not override the assistant's obligation to remain faithful to the human.
 
