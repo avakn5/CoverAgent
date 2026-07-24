@@ -25,7 +25,7 @@ Among reports where the model did not refuse to answer, 49.5% misattribute respo
 We may need to rethink both how we prompt personal assistants and how AI agents are allowed to interact with one another, so that collaboration with peer agents does not override the assistant's obligation to remain faithful to the human.
 
 <p>
-  <img src="results/min_read_me.jpeg" alt="49.5% of non-refusal final reports misattribute responsibility under peer-reputation pressure with the no-guardrails prompt; 23.7% do so with explicit be-helpful guardrails on matched model-scenario cells." width="760">
+  <img src="results/asset/readme_image.jpg" alt="49.5% of non-refusal final reports misattribute responsibility under peer-reputation pressure with the no-guardrails prompt; 23.7% do so with explicit be-helpful guardrails on matched model-scenario cells." width="760">
 </p>
 
 
