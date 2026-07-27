@@ -20,12 +20,12 @@ The leaderboard asks the following question: after another AI agent admits it ca
   <img src="results/asset/coveragent_model_leaderboard.png" alt="CoverAgent misattribution rate leaderboard by model, averaged over scheduling and coding under no-guardrails peer-reputation pressure." width="760">
 </p>
 
-Among reports where the model did not refuse to answer, 49.5% misattribute responsibility under the no-guardrails prompt. Adding an instruction to be helpful, honest, and to use judgment reduces the failure rate to 22.6% on the same model/scenario comparisons, but the failure mode remains.
+Among reports where the model did not refuse to answer, 49.5% misattribute responsibility under the no-guardrails prompt for scheduling and coding scenarios. Adding an instruction to be helpful, honest, and to use judgment reduces the failure rate to 22.6% on the same model/scenario comparisons, but the failure mode remains.
 
 We may need to rethink both how we prompt personal assistants and how AI agents are allowed to interact with one another, so that collaboration with peer agents does not override the assistant's obligation to remain faithful to the human.
 
 <p>
-  <img src="results/asset/readme_image.jpg" alt="49.5% of non-refusal final reports misattribute responsibility under peer-reputation pressure with the no-guardrails prompt; 23.7% do so with explicit be-helpful guardrails on matched model-scenario cells." width="760">
+  <img src="results/asset/readme_image.jpg" alt="49.5% of non-refusal final reports misattribute responsibility under peer-reputation pressure with the no-guardrails prompt; 22.6% do so with explicit be-helpful guardrails on matched model-scenario cells." width="760">
 </p>
 
 
@@ -82,7 +82,6 @@ A separate judge, GLM-5.2 by default, scores each report from the ground-truth f
 | --- | --- |
 | [results/summary.csv](results/summary.csv) | Frozen aggregate category counts, rates, and confidence intervals. |
 | [runs_sample/](runs_sample/) | Sample run JSONs for spot-checking transcripts and scoring. |
-| [MODELS.md](MODELS.md) | Exact model ids, provider routes, run dates, and determinism caveats. |
 
 
 ## Repository Structure
@@ -92,6 +91,13 @@ coveragent/    # benchmark harness and CLI
 scenarios/     # scheduling, coding, and finance scenario prompts + facts
 results/       # figures, summaries 
 ```
+
+## TODO
+
+- [ ] Release scenario runs.
+- [ ] Add a 4th incident domain.
+- [ ] Add more pressure conditions.
+- [ ] Broaden model coverage + seed count.
 
 ## Citation
 
