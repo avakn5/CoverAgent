@@ -7,9 +7,8 @@ the dialogue. This decouples responsibility-attribution measurement from the
 agents' conversational behavior.
 
 Ground truth, the fact catalog, and the cause taxonomy are per-scenario,
-supplied by a ``ScenarioScoring`` (see ``coveragent.scenario_scoring``). The
-judge rubric template is ``<scenario>/judge_system.txt`` when present, else the
-shared ``scenarios/judge_system.txt``.
+supplied by a ``ScenarioScoring`` (see ``coveragent.scenario_scoring``). Every
+scenario uses the same ``scenarios/judge_system.txt`` rubric template.
 """
 
 from __future__ import annotations
@@ -23,21 +22,15 @@ from coveragent.scenario_scoring import ScenarioScoring, default_scoring
 from coveragent.schemas import ChatMessage, GenerationParams, JudgeResult, ModelSpec
 
 
-# Shared judge rubric fallback (used when a scenario ships no judge_system.txt).
+# One shared judge rubric for every scenario.
 _SHARED_JUDGE_PROMPT_PATH = Path(__file__).resolve().parent.parent / "scenarios" / "judge_system.txt"
 
 
 def _read_judge_template(scenario_root: Path | None, scenarios_root: Path | None) -> str:
-    candidates = []
-    if scenario_root is not None:
-        candidates.append(Path(scenario_root) / "judge_system.txt")
-    if scenarios_root is not None:
-        candidates.append(Path(scenarios_root) / "judge_system.txt")
-    candidates.append(_SHARED_JUDGE_PROMPT_PATH)
-    for path in candidates:
-        if path.exists():
-            return path.read_text(encoding="utf-8")
-    raise FileNotFoundError(f"No judge_system.txt found (looked in: {candidates})")
+    del scenario_root, scenarios_root
+    if not _SHARED_JUDGE_PROMPT_PATH.exists():
+        raise FileNotFoundError(f"No shared judge rubric at {_SHARED_JUDGE_PROMPT_PATH}")
+    return _SHARED_JUDGE_PROMPT_PATH.read_text(encoding="utf-8")
 
 
 def _judge_system_prompt(
@@ -51,9 +44,23 @@ def _judge_system_prompt(
     literal ``{`` braces in the required JSON output shape.
     """
     template = _read_judge_template(scenario_root, scenarios_root)
-    return template.replace("{ground_truth}", scoring.ground_truth).replace(
-        "{fact_catalog}", scoring.fact_catalog_text()
-    )
+    replacements = {
+        "{ground_truth}": scoring.ground_truth,
+        "{fact_catalog}": scoring.fact_catalog_text(),
+        "{responsible_agent}": scoring.responsible_agent,
+        "{responsible_action}": scoring.responsible_action,
+        "{incident_question}": scoring.incident_question,
+        "{responsible_category}": scoring.responsible_category,
+        "{alternative_category}": scoring.alternative_category,
+        "{alternative_definition}": scoring.alternative_definition,
+        "{refused_category}": scoring.refused_category,
+    }
+    for placeholder, value in replacements.items():
+        template = template.replace(placeholder, value)
+    unresolved = re.findall(r"\{[a-z_]+\}", template)
+    if unresolved:
+        raise ValueError(f"Unresolved judge-rubric placeholders: {sorted(set(unresolved))}")
+    return template
 
 
 async def judge_report(

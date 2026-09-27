@@ -532,6 +532,84 @@ def _openrouter_extract(data: dict) -> str:
     return content
 
 
+class ModalChatClient:
+    """Modal shared endpoint backend (OpenAI-compatible /chat/completions)."""
+
+    BASE_URL = "https://inference.us-west.modal.direct/v1"
+    _RETRY_STATUS = {408, 409, 429, 500, 502, 503, 504}
+
+    def __init__(self, api_key: str | None = None, base_url: str | None = None, max_retries: int | None = None) -> None:
+        import os
+
+        self._api_key = api_key or os.environ.get("MODAL_PROXY_TOKEN")
+        if not self._api_key:
+            raise RuntimeError("Set MODAL_PROXY_TOKEN to use the Modal backend.")
+        self._base_url = (base_url or os.environ.get("MODAL_BASE_URL") or self.BASE_URL).rstrip("/")
+        self._max_retries = max_retries or int(os.environ.get("MODAL_MAX_RETRIES", "4"))
+        self._retry_base_seconds = float(os.environ.get("MODAL_RETRY_BASE_SECONDS", "1"))
+        self._retry_max_seconds = float(os.environ.get("MODAL_RETRY_MAX_SECONDS", "20"))
+        self._client = None
+
+    def _http(self):
+        if self._client is None:
+            import httpx
+
+            self._client = httpx.AsyncClient(timeout=httpx.Timeout(600.0, connect=30.0))
+        return self._client
+
+    async def complete(
+        self,
+        messages: list[ChatMessage],
+        model: ModelSpec,
+        params: GenerationParams,
+    ) -> str:
+        import asyncio
+
+        import httpx
+
+        payload: dict = {
+            "model": model.model_id,
+            "messages": [{"role": message.role, "content": message.content} for message in messages],
+            "max_tokens": params.max_tokens,
+            "temperature": params.temperature,
+            "top_p": params.top_p,
+        }
+        if params.seed is not None:
+            payload["seed"] = params.seed
+        if params.reasoning_effort is not None:
+            payload["reasoning_effort"] = params.reasoning_effort
+        elif params.enable_thinking is False:
+            payload["reasoning_effort"] = "none"
+        elif params.enable_thinking is True:
+            payload["reasoning_effort"] = _default_modal_reasoning_effort()
+
+        headers = {"Authorization": f"Bearer {self._api_key}", "Content-Type": "application/json"}
+        url = f"{self._base_url}/chat/completions"
+
+        last_error: Exception | None = None
+        for attempt in range(self._max_retries):
+            try:
+                resp = await self._http().post(url, json=payload, headers=headers)
+                if resp.status_code in self._RETRY_STATUS:
+                    last_error = httpx.HTTPStatusError(
+                        f"HTTP {resp.status_code}: {resp.text[:200]}", request=resp.request, response=resp
+                    )
+                    await asyncio.sleep(min(self._retry_base_seconds * (2 ** attempt), self._retry_max_seconds))
+                    continue
+                resp.raise_for_status()
+                return _openrouter_extract(resp.json())
+            except httpx.TransportError as exc:
+                last_error = exc
+                await asyncio.sleep(min(self._retry_base_seconds * (2 ** attempt), self._retry_max_seconds))
+        raise RuntimeError(f"Modal request failed after {self._max_retries} attempts: {last_error}")
+
+
+def _default_modal_reasoning_effort() -> str:
+    import os
+
+    return os.environ.get("MODAL_REASONING_EFFORT", "medium")
+
+
 class OpenRouterChatClient:
     """OpenRouter backend (OpenAI-compatible /chat/completions)."""
 
@@ -582,7 +660,11 @@ class OpenRouterChatClient:
             if params.reasoning_effort is not None:
                 payload["reasoning"] = {"effort": str(params.reasoning_effort)}
         elif params.enable_thinking is False:
+            # ``include_reasoning=False`` only hides reasoning from OpenRouter's
+            # response; it does not stop the model from spending the entire
+            # completion budget on hidden reasoning. Explicitly disable it.
             payload["include_reasoning"] = False
+            payload["reasoning"] = {"enabled": False}
 
         headers = {
             "Authorization": f"Bearer {self._api_key}",

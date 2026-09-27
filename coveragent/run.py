@@ -29,9 +29,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--seed-base", type=int, default=0,
                         help="trial t uses seed = seed_base + t (default 0)")
     parser.add_argument("--judge-size", default="14B", help='judge model alias, or "none" to use the heuristic')
-    parser.add_argument("--backend", default="transformers", choices=["transformers", "vllm", "fireworks", "openrouter", "sail"],
+    parser.add_argument("--backend", default="transformers", choices=["transformers", "vllm", "fireworks", "openrouter", "sail", "modal"],
                         help="inference backend")
-    parser.add_argument("--judge-backend", default=None, choices=["transformers", "vllm", "fireworks", "openrouter", "sail"],
+    parser.add_argument("--judge-backend", default=None, choices=["transformers", "vllm", "fireworks", "openrouter", "sail", "modal"],
                         help="optional backend for the judge; defaults to --backend")
     parser.add_argument("--no-thinking", action="store_true",
                         help="disable reasoning/CoT (default: on for thinking-capable models)")
@@ -65,6 +65,10 @@ def _build_client(backend: str):
         from coveragent.backends import OpenRouterChatClient
 
         return OpenRouterChatClient()
+    if backend == "modal":
+        from coveragent.backends import ModalChatClient
+
+        return ModalChatClient()
     if backend == "sail":
         from coveragent.backends import SailChatClient
 
@@ -83,8 +87,8 @@ async def _run(args: argparse.Namespace) -> None:
     judge_client = None
     if args.judge_backend is not None and args.judge_backend != args.backend and args.judge_size.lower() not in {"", "none", "off"}:
         judge_client = _build_client(args.judge_backend)
-    enable_thinking = False if args.no_thinking else (True if args.backend in {"fireworks", "openrouter"} else None)
-    reasoning_effort = None if args.no_thinking or args.backend not in {"fireworks", "openrouter"} else args.reasoning_effort
+    enable_thinking = False if args.no_thinking else (True if args.backend in {"fireworks", "openrouter", "modal"} else None)
+    reasoning_effort = None if args.no_thinking or args.backend not in {"fireworks", "openrouter", "modal"} else args.reasoning_effort
     concurrency = args.concurrency
     if args.backend == "transformers" and concurrency > 1:
         print("warning: --concurrency >1 is unsafe on the shared GPU; forcing 1 for transformers")

@@ -97,6 +97,8 @@ JUDGE_DISABLED = {"", "none", "off"}
 
 
 def known_model_names(backend: str = "transformers") -> list[str]:
+    if backend == "modal":
+        return ["modal:<model-or-endpoint-id>"]
     if backend == "fireworks":
         return sorted(FIREWORKS_MODELS) + ["fw:<accounts/.../model>"]
     if backend == "openrouter":
@@ -107,6 +109,12 @@ def known_model_names(backend: str = "transformers") -> list[str]:
 
 
 def resolve_model_id(model_name: str, backend: str = "transformers") -> str:
+    if backend == "modal":
+        if model_name.startswith("modal:"):
+            model_id = model_name[6:].strip()
+            if model_id:
+                return model_id
+        raise ValueError(f"Unknown Modal model {model_name!r}. Choose from {known_model_names('modal')}")
     if backend == "fireworks":
         if model_name.startswith("fw:"):
             model_id = model_name[3:].strip()
@@ -141,6 +149,8 @@ def resolve_model_id(model_name: str, backend: str = "transformers") -> str:
 
 
 def provider_name(model_id: str) -> str:
+    if model_id.endswith(".modal.direct") or model_id.startswith("modal/"):
+        return "modal"
     if model_id.startswith("accounts/"):
         return "fireworks"
     if model_id.startswith(("openai/", "qwen/", "z-ai/", "anthropic/", "google/")):
